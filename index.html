@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Jewelry Visual Search</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
+<style>
+/* ── Reset & Tokens ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --cream:   #f9f5ef;
+  --warm:    #f0e8d8;
+  --gold:    #c9a84c;
+  --gold2:   #e8c97a;
+  --bronze:  #8b6914;
+  --ink:     #1a1410;
+  --ink2:    #3d3025;
+  --muted:   #9b8c7a;
+  --border:  #ddd4c0;
+  --surface: #ffffff;
+  --shadow:  0 2px 24px rgba(140,100,20,0.10);
+  --shadow2: 0 8px 48px rgba(140,100,20,0.16);
+  --serif:  'Cormorant Garamond', Georgia, serif;
+  --sans:   'DM Sans', sans-serif;
+  --radius: 4px;
+  --trans:  0.22s ease;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-weight: 300;
+  min-height: 100vh;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+body::after {
+  content:'';
+  position:fixed; inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events:none; z-index:999;
+}
+
+/* ── Hero ───────────────────────────────────────────────── */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 64px 24px 48px;
+  text-align: center;
+}
+
+.hero-title {
+  font-family: var(--serif);
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  font-weight: 300;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+
+.hero-title em {
+  font-style: italic;
+  color: var(--gold);
+}
+
+.hero-sub {
+  font-size: 0.85rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 40px;
+}
+
+/* ── Search Bar ──────────────────────────────────────────── */
+.search-container {
+  width: 100%;
+  max-width: 740px;
+  position: relative;
+}
+
+.search-shell {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 60px;
+  padding: 6px 6px 6px 20px;
+  box-shadow: var(--shadow);
+  transition: border-color var(--trans), box-shadow var(--trans);
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.search-shell:focus-within {
+  border-color: var(--gold);
+  box-shadow: var(--shadow2), 0 0 0 3px rgba(201,168,76,0.12);
+}
+
+.image-chip {
+  display: none;
+  align-items: center;
+  gap: 7px;
+  background: var(--warm);
+  border: 1px solid var(--border);
+  border-radius: 30px;
+  padding: 4px 10px 4px 5px;
+  font-size: 0.75rem;
+  color: var(--ink2);
+  flex-shrink: 0;
+  max-width: 180px;
+}
+
+.image-chip.show { display: flex; }
+
+.image-chip img {
+  width: 28px; height: 28px;
+  border-radius: 20px;
+  object-fit: cover;
+}
+
+.image-chip-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chip-remove {
+  background: none; border: none;
+  cursor: pointer; color: var(--muted);
+  font-size: 14px; line-height: 1;
+  padding: 0; flex-shrink: 0;
+}
+
+.chip-remove:hover { color: var(--ink); }
+
+#textInput {
+  flex: 1;
+  min-width: 120px;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  font-weight: 300;
+  color: var(--ink);
+  padding: 8px 4px;
+}
+
+#textInput::placeholder { color: var(--muted); }
+
+.search-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.icon-btn {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--cream);
+  color: var(--muted);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--trans);
+  font-size: 16px;
+}
+
+.icon-btn:hover {
+  background: var(--warm);
+  color: var(--ink);
+  border-color: var(--gold);
+}
+
+.icon-btn.active {
+  background: var(--gold);
+  color: #fff;
+  border-color: var(--gold);
+}
+
+.icon-btn.recording {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+  animation: recPulse 1s ease-in-out infinite;
+}
+
+@keyframes recPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+  50%      { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+}
+
+.search-btn {
+  height: 44px;
+  padding: 0 24px;
+  border-radius: 50px;
+  background: var(--gold);
+  color: #fff;
+  border: none;
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--trans);
+  white-space: nowrap;
+  display: flex; align-items: center; gap: 7px;
+}
+
+.search-btn:hover {
+  background: var(--bronze);
+  box-shadow: 0 4px 20px rgba(201,168,76,0.35);
+}
+
+.search-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+#imageInput, #audioInput { display: none; }
+
+/* ── Mode chips ──────────────────────────────────────────── */
+.mode-chips {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.mode-chip {
+  font-size: 0.72rem;
+  padding: 4px 13px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--surface);
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all var(--trans);
+  white-space: nowrap;
+}
+
+.mode-chip:hover, .mode-chip.active {
+  border-color: var(--gold);
+  color: var(--bronze);
+  background: rgba(201,168,76,0.07);
+}
+
+/* ── Status ──────────────────────────────────────────────── */
+#statusBar {
+  width: 100%;
+  max-width: 740px;
+  margin-top: 18px;
+  min-height: 32px;
+  display: none;
+}
+
+.status-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Metrics Bar ─────────────────────────────────────────── */
+#metricsBar {
+  width: 100%;
+  max-width: 740px;
+  margin: 0 auto 28px;
+  display: none;
+  padding: 0 24px;
+}
+
+.metrics-inner {
+  display: flex;
+  align-items: stretch;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.metric-cell {
+  flex: 1;
+  padding: 18px 16px;
+  border-right: 1px solid var(--border);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.metric-cell:last-child { border-right: none; }
+
+/* Label: small, spaced caps, DM Sans */
+.metric-label {
+  font-family: var(--sans);
+  font-size: 0.62rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+
+/* Value: DM Sans medium weight — clean, legible numbers */
+.metric-value {
+  font-family: var(--sans);
+  font-size: 1.35rem;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Unit suffix: lighter, smaller */
+.metric-unit {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 300;
+  color: var(--muted);
+  margin-left: 1px;
+}
+
+/* ── Results ─────────────────────────────────────────────── */
+#resultsSection {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+  display: none;
+}
+
+.results-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.results-title {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+}
+
+.results-title span {
+  font-style: italic;
+  color: var(--gold);
+}
+
+.results-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 2px;
+}
+
+/* ── Card ────────────────────────────────────────────────── */
+.result-card {
+  position: relative;
+  background: var(--surface);
+  overflow: hidden;
+  cursor: pointer;
+  animation: cardIn 0.4s ease both;
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.result-card:nth-child(1)  { animation-delay: 0.02s }
+.result-card:nth-child(2)  { animation-delay: 0.04s }
+.result-card:nth-child(3)  { animation-delay: 0.06s }
+.result-card:nth-child(4)  { animation-delay: 0.08s }
+.result-card:nth-child(5)  { animation-delay: 0.10s }
+.result-card:nth-child(6)  { animation-delay: 0.12s }
+.result-card:nth-child(7)  { animation-delay: 0.14s }
+.result-card:nth-child(8)  { animation-delay: 0.16s }
+.result-card:nth-child(9)  { animation-delay: 0.18s }
+.result-card:nth-child(10) { animation-delay: 0.20s }
+.result-card:nth-child(n+11) { animation-delay: 0.22s }
+
+.card-img-wrap {
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--warm);
+  position: relative;
+}
+
+.card-img-wrap img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
+}
+
+.result-card:hover .card-img-wrap img { transform: scale(1.06); }
+
+.rank-badge {
+  position: absolute;
+  top: 10px; left: 10px;
+  width: 28px; height: 28px;
+  background: rgba(201,168,76,0.92);
+  color: #fff;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+  line-height: 1;
+}
+
+.rank-badge.top3 {
+  background: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.score-bar-wrap {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: rgba(255,255,255,0.2);
+}
+
+.score-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold2), var(--gold));
+  transition: width 0.6s ease;
+}
+
+/* Card footer — only product ID, no score */
+.card-footer {
+  padding: 9px 12px;
+}
+
+.card-id {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* ── Lightbox ────────────────────────────────────────────── */
+#lightbox {
+  position: fixed; inset: 0;
+  background: rgba(20,16,10,0.88);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  animation: lbIn 0.2s ease;
+}
+
+@keyframes lbIn { from { opacity: 0; } to { opacity: 1; } }
+
+#lightbox.show { display: flex; }
+
+.lb-inner {
+  position: relative;
+  max-width: 90vw;
+  max-height: 88vh;
+  cursor: default;
+}
+
+#lbImg {
+  max-width: 80vw;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 2px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+  display: block;
+}
+
+.lb-info {
+  margin-top: 14px;
+  text-align: center;
+  color: rgba(249,245,239,0.7);
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+}
+
+.lb-close {
+  position: absolute;
+  top: -16px; right: -16px;
+  width: 36px; height: 36px;
+  background: var(--gold);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1;
+  transition: background var(--trans);
+}
+
+.lb-close:hover { background: var(--bronze); }
+
+/* ── Empty state ─────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 64px 24px;
+  color: var(--muted);
+  display: none;
+}
+
+.empty-state.show { display: block; }
+
+.empty-icon { font-size: 3rem; opacity: 0.25; margin-bottom: 16px; }
+
+.empty-msg {
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  font-weight: 300;
+  font-style: italic;
+  margin-bottom: 8px;
+  color: var(--ink2);
+}
+
+.empty-sub { font-size: 0.82rem; }
+
+/* ── Toast ───────────────────────────────────────────────── */
+#toast {
+  position: fixed;
+  bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--ink);
+  color: var(--cream);
+  padding: 11px 22px;
+  border-radius: 50px;
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 600;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .hero  { padding: 40px 16px 32px; }
+  .search-shell { padding: 4px 4px 4px 14px; }
+  .search-btn { padding: 0 16px; font-size: 0.76rem; }
+  .results-grid { grid-template-columns: repeat(2, 1fr); gap: 1px; }
+  .metrics-inner { flex-wrap: wrap; }
+  .metric-cell { min-width: 50%; border-bottom: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Hero + Search ─────────────────────────────────────── -->
+<section class="hero">
+  <h1 class="hero-title">Find jewelry by<br><em>sight, sound, or word</em></h1>
+  <p class="hero-sub">Text · Image · Voice · Hybrid Search</p>
+
+  <div class="search-container">
+    <div class="search-shell" id="searchShell">
+
+      <div class="image-chip" id="imageChip">
+        <img id="chipThumb" src="" alt=""/>
+        <span class="image-chip-name" id="chipName">image.jpg</span>
+        <button class="chip-remove" onclick="removeImage()" title="Remove image">✕</button>
+      </div>
+
+      <input
+        id="textInput"
+        type="text"
+        placeholder="Describe jewelry… or attach an image / record voice"
+        autocomplete="off"
+        spellcheck="false"
+      />
+
+      <div class="search-actions">
+        <button class="icon-btn" id="imgBtn" onclick="document.getElementById('imageInput').click()" title="Attach image">🖼</button>
+        <input type="file" id="imageInput" accept="image/*" onchange="onImageSelected(event)"/>
+
+        <button class="icon-btn" id="audioBtn" onclick="toggleAudio()" title="Record voice">🎙</button>
+        <input type="file" id="audioInput" accept="audio/*" onchange="onAudioSelected(event)"/>
+
+        <button class="search-btn" id="searchBtn" onclick="runSearch()">
+          <span id="btnLabel">Search</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="mode-chips">
+      <div class="mode-chip" onclick="setExample('kundan necklace')">Kundan Necklace</div>
+      <div class="mode-chip" onclick="setExample('gold jhumka earrings')">Gold Jhumka</div>
+      <div class="mode-chip" onclick="setExample('meenakari bangles')">Meenakari Bangles</div>
+      <div class="mode-chip" onclick="setExample('diamond pendant bridal')">Diamond Pendant</div>
+      <div class="mode-chip" onclick="setExample('silver temple jewelry')">Temple Jewelry</div>
+    </div>
+
+    <div id="statusBar">
+      <div class="status-inner">
+        <div class="spinner" id="spinner"></div>
+        <span id="statusText">Running search…</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Metrics — 4 cells only (Search Mode removed) ─────── -->
+<div id="metricsBar">
+  <div class="metrics-inner">
+    <div class="metric-cell">
+      <div class="metric-label">Retrieval</div>
+      <div class="metric-value" id="mRetrieval">—</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Reranking</div>
+      <div class="metric-value" id="mRerank">—</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Total Time</div>
+      <div class="metric-value" id="mTotal">—</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Results</div>
+      <div class="metric-value" id="mCount">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Results ───────────────────────────────────────────── -->
+<section id="resultsSection">
+  <div class="results-header">
+    <div class="results-title">Results for <span id="queryLabel">—</span></div>
+    <div class="results-meta" id="resultsMeta">20 reranked results</div>
+  </div>
+  <div class="results-grid" id="resultsGrid"></div>
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">💎</div>
+    <div class="empty-msg">No results found</div>
+    <div class="empty-sub">Try a different query or attach an image</div>
+  </div>
+</section>
+
+<!-- ── Lightbox ──────────────────────────────────────────── -->
+<div id="lightbox" onclick="closeLightbox(event)">
+  <div class="lb-inner" onclick="event.stopPropagation()">
+    <button class="lb-close" onclick="closeLightbox()">✕</button>
+    <img id="lbImg" src="" alt=""/>
+    <div class="lb-info" id="lbInfo"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let selectedImageFile = null;
+let selectedAudioFile = null;
+let mediaRecorder     = null;
+let audioChunks       = [];
+let isRecording       = false;
+let currentResults    = [];
+
+// ── Image ────────────────────────────────────────────────
+function onImageSelected(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  selectedImageFile = file;
+  const reader = new FileReader();
+  reader.onload = ev => { document.getElementById('chipThumb').src = ev.target.result; };
+  reader.readAsDataURL(file);
+  document.getElementById('chipName').textContent = file.name;
+  document.getElementById('imageChip').classList.add('show');
+  document.getElementById('imgBtn').classList.add('active');
+  toast('Image attached — ' + file.name);
+}
+
+function removeImage() {
+  selectedImageFile = null;
+  document.getElementById('imageInput').value = '';
+  document.getElementById('imageChip').classList.remove('show');
+  document.getElementById('imgBtn').classList.remove('active');
+}
+
+// ── Audio ────────────────────────────────────────────────
+async function toggleAudio() {
+  if (isRecording) { stopRecording(); return; }
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    document.getElementById('audioInput').click();
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks   = [];
+
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(audioChunks, { type: 'audio/webm' });
+      selectedAudioFile = new File([blob], 'voice_query.webm', { type: 'audio/webm' });
+      toast('Voice recorded — click Search');
+      stream.getTracks().forEach(t => t.stop());
+    };
+
+    mediaRecorder.start();
+    isRecording = true;
+    document.getElementById('audioBtn').classList.add('recording');
+    document.getElementById('audioBtn').title = 'Stop recording';
+    setStatus('Recording… click 🎙 to stop');
+    document.getElementById('statusBar').style.display = 'block';
+    document.getElementById('spinner').style.display = 'none';
+
+  } catch(err) {
+    console.warn('Mic error:', err);
+    document.getElementById('audioInput').click();
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  isRecording = false;
+  document.getElementById('audioBtn').classList.remove('recording');
+  document.getElementById('audioBtn').classList.add('active');
+  document.getElementById('audioBtn').title = 'Voice attached';
+  document.getElementById('statusBar').style.display = 'none';
+}
+
+function onAudioSelected(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  selectedAudioFile = file;
+  document.getElementById('audioBtn').classList.add('active');
+  toast('Audio attached — ' + file.name);
+}
+
+// ── Search ───────────────────────────────────────────────
+async function runSearch() {
+  const text     = document.getElementById('textInput').value.trim();
+  const hasText  = !!text;
+  const hasImage = !!selectedImageFile;
+  const hasAudio = !!selectedAudioFile;
+
+  if (!hasText && !hasImage && !hasAudio) {
+    toast('Please enter a query, attach an image, or record your voice');
+    return;
+  }
+
+  setLoading(true, 'Searching jewels…');
+  hideResults();
+
+  const fd = new FormData();
+  if (hasText)  fd.append('text',  text);
+  if (hasImage) fd.append('image', selectedImageFile, selectedImageFile.name);
+  if (hasAudio) fd.append('audio', selectedAudioFile, selectedAudioFile.name);
+
+  try {
+    const resp = await fetch('/search', { method: 'POST', body: fd });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+      throw new Error(err.detail || 'Server error');
+    }
+    const data = await resp.json();
+    const displayQuery = data.query_text || (hasAudio ? 'voice query' : hasImage ? 'image' : text);
+    showResults(data, displayQuery);
+  } catch(e) {
+    setLoading(false);
+    toast('Error: ' + e.message, true);
+    console.error(e);
+  }
+}
+
+// ── Render ───────────────────────────────────────────────
+function showResults(data, query) {
+  setLoading(false);
+
+  const m = data.metrics || {};
+
+  const rt = m.retrieval_time;
+  document.getElementById('mRetrieval').innerHTML =
+    rt != null ? `${rt.toFixed(3)}<span class="metric-unit">s</span>` : '—';
+
+  const rk = m.reranking_time;
+  document.getElementById('mRerank').innerHTML =
+    rk != null ? `${rk.toFixed(3)}<span class="metric-unit">s</span>` : '—';
+
+  const tt = data.total_time;
+  document.getElementById('mTotal').innerHTML =
+    tt != null ? `${tt.toFixed(2)}<span class="metric-unit">s</span>` : '—';
+
+  document.getElementById('mCount').textContent =
+    data.result_count != null ? data.result_count : (data.results || []).length;
+
+  document.getElementById('metricsBar').style.display = 'block';
+
+  currentResults = data.results || [];
+  const grid = document.getElementById('resultsGrid');
+  grid.innerHTML = '';
+
+  if (!currentResults.length) {
+    document.getElementById('emptyState').classList.add('show');
+  } else {
+    document.getElementById('emptyState').classList.remove('show');
+    currentResults.forEach(item => grid.appendChild(buildCard(item)));
+  }
+
+  document.getElementById('queryLabel').textContent = `"${query}"`;
+  document.getElementById('resultsMeta').textContent = `${currentResults.length} reranked results`;
+  document.getElementById('resultsSection').style.display = 'block';
+
+  setTimeout(() => {
+    document.getElementById('metricsBar').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+function buildCard(item) {
+  const card = document.createElement('div');
+  card.className = 'result-card';
+  card.onclick = () => openLightbox(item);
+
+  const scorePercent = Math.min(100, Math.round((item.score || 0) * 100));
+  const isTop3 = item.rank <= 3;
+
+  // Card shows: image + rank badge + score bar + product ID only (no score number)
+  card.innerHTML = `
+    <div class="card-img-wrap">
+      <img
+        src="${item.image_url}"
+        alt="${item.product_id}"
+        loading="lazy"
+        onerror="this.parentElement.innerHTML='<div class=\\'img-placeholder\\'>💎</div>'"
+      />
+      <div class="rank-badge ${isTop3 ? 'top3' : ''}">${item.rank}</div>
+      <div class="score-bar-wrap">
+        <div class="score-bar-fill" style="width:${scorePercent}%"></div>
+      </div>
+    </div>
+    <div class="card-footer">
+      <div class="card-id">${item.product_id}</div>
+    </div>
+  `;
+  return card;
+}
+
+// ── Lightbox ─────────────────────────────────────────────
+function openLightbox(item) {
+  document.getElementById('lbImg').src = item.image_url;
+  document.getElementById('lbInfo').textContent =
+    `#${item.rank}  ·  ${item.product_id}`;
+  document.getElementById('lightbox').classList.add('show');
+}
+
+function closeLightbox(e) {
+  if (!e || e.target === document.getElementById('lightbox')) {
+    document.getElementById('lightbox').classList.remove('show');
+    document.getElementById('lbImg').src = '';
+  }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+// ── UI helpers ───────────────────────────────────────────
+function setLoading(on, msg = 'Searching…') {
+  const sb  = document.getElementById('statusBar');
+  const btn = document.getElementById('searchBtn');
+  if (on) {
+    document.getElementById('statusText').textContent = msg;
+    document.getElementById('spinner').style.display = 'block';
+    sb.style.display = 'block';
+    document.getElementById('btnLabel').textContent = 'Searching…';
+    btn.disabled = true;
+  } else {
+    sb.style.display = 'none';
+    document.getElementById('btnLabel').textContent = 'Search';
+    btn.disabled = false;
+  }
+}
+
+function setStatus(msg) {
+  document.getElementById('statusText').textContent = msg;
+  document.getElementById('statusBar').style.display = 'block';
+}
+
+function hideResults() {
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('metricsBar').style.display = 'none';
+  document.getElementById('emptyState').classList.remove('show');
+}
+
+function setExample(text) {
+  document.getElementById('textInput').value = text;
+  document.getElementById('textInput').focus();
+}
+
+document.getElementById('textInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runSearch();
+});
+
+let toastTimer;
+function toast(msg, isError = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = isError ? '#c0392b' : 'var(--ink)';
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+</script>
+</body>
+</html>
